@@ -1,0 +1,76 @@
+﻿@page "/admin/group/create"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IGroupService GroupService
+@inject IProgramService ProgramService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+<h3>Создание новой группы</h3>
+
+@if (isReady)
+{
+    <EditForm Model="newGroup" OnValidSubmit="HandleCreateGroup">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label class="form-label">Название группы</label>
+            <InputText class="form-control" @bind-Value="newGroup.Name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Образовательная программа</label>
+            <InputSelect class="form-select" @bind-Value="newGroup.EducationalProgramId">
+                <option value="">-- Выберите программу --</option>
+                @foreach (var program in programs)
+                {
+                    <option value="@program.Id">@program.Name</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Преподаватель</label>
+            <InputSelect class="form-select" @bind-Value="newGroup.TeacherId">
+                <option value="">-- Выберите преподавателя --</option>
+                @foreach (var teacher in teachers)
+                {
+                    <option value="@teacher.Id">@teacher.FullName</option>
+                }
+            </InputSelect>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Создать</button>
+    </EditForm>
+}
+else
+{
+    <p><em>Загрузка данных для формы...</em></p>
+}
+
+@code {
+    private CreateGroupDto newGroup = new CreateGroupDto();
+    private List<ProgramDto> programs;
+    private List<UserDto> teachers;
+    private bool isReady = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Загружаем все данные параллельно
+        var programsTask = ProgramService.GetProgramsAsync();
+        var teachersTask = UserService.GetUsersByRoleAsync("Teacher");
+
+        await Task.WhenAll(programsTask, teachersTask);
+
+        programs = programsTask.Result;
+        teachers = teachersTask.Result;
+        isReady = true;
+    }
+
+    private async Task HandleCreateGroup()
+    {
+        await GroupService.CreateGroupAsync(newGroup);
+        NavigationManager.NavigateTo("/admin/groups");
+    }
+}

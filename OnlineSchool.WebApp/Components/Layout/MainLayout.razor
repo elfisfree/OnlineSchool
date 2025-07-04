@@ -6,6 +6,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IAuthService AuthService
 @inject IProgramService ProgramService
+@inject IUserService UserService
+@inject IGroupService GroupService
 
 <div class="page">
     <div class="sidebar">
@@ -40,6 +42,8 @@
             {
                 AuthService.SetAuthToken(token);
                 ProgramService.SetAuthToken(token);
+                UserService.SetAuthToken(token);
+                GroupService.SetAuthToken(token);
                 // (когда появятся другие сервисы, их тоже нужно будет сюда добавить)
 
                 await ((ApiAuthenticationStateProvider)AuthenticationStateProvider).UpdateAuthenticationState(token);

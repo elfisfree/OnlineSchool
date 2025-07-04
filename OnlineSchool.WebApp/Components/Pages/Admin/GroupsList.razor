@@ -1,0 +1,50 @@
+﻿@page "/admin/groups"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IGroupService GroupService
+
+<h3>Учебные группы</h3>
+
+<p>
+    <a href="/admin/group/create" class="btn btn-success">Создать новую группу</a>
+</p>
+
+@if (groups == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Программа</th>
+                <th>Преподаватель</th>
+                <th>Кол-во учеников</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var group in groups)
+            {
+                <tr>
+                    <td>@group.Name</td>
+                    <td>@group.ProgramName</td>
+                    <td>@group.TeacherName</td>
+                    <td>@group.StudentsCount</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<GroupDto> groups;
+
+    protected override async Task OnInitializedAsync()
+    {
+        groups = await GroupService.GetGroupsAsync();
+    }
+}
