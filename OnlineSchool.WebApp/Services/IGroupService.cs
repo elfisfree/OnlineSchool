@@ -7,5 +7,10 @@ namespace OnlineSchool.WebApp.Services
         void SetAuthToken(string token);
         Task<List<GroupDto>> GetGroupsAsync();
         Task CreateGroupAsync(CreateGroupDto group);
+
+        Task<GroupDetailDto> GetGroupDetailsAsync(int id);
+        Task AddStudentToGroupAsync(int groupId, string studentId);
+
+        Task RemoveStudentFromGroupAsync(int groupId, string studentId);
     }
 }

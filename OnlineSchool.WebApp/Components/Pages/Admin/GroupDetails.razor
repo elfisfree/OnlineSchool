@@ -1,0 +1,114 @@
+﻿@page "/admin/group/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IGroupService GroupService
+@inject IUserService UserService
+
+<h3>Детали группы</h3>
+
+@if (group == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>@group.Name</h5>
+        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Программа:</strong> @group.ProgramName</li>
+            <li class="list-group-item"><strong>Преподаватель:</strong> @group.TeacherName</li>
+        </ul>
+    </div>
+
+    <h4>Ученики в группе (@group.Students.Count)</h4>
+    @if (group.Students.Any())
+    {
+        <ul class="list-group mb-4">
+            @foreach (var student in group.Students)
+            {
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>@student.FullName (@student.Email)</span>
+
+                    @* --- ДОБАВЛЯЕМ КНОПКУ УДАЛЕНИЯ --- *@
+                    <button class="btn btn-danger btn-sm" @onclick="() => HandleRemoveStudent(student.Id)">
+                        Удалить
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>В этой группе пока нет учеников.</p>
+    }
+
+    <hr />
+
+    <h4>Добавить ученика в группу</h4>
+    @if (allStudents != null)
+    {
+        <div class="input-group">
+            <select @bind="selectedStudentId" class="form-select">
+                <option value="">-- Выберите ученика --</option>
+                @foreach (var student in allStudents)
+                {
+                    <option value="@student.Id">@student.FullName (@student.Email)</option>
+                }
+            </select>
+            <button class="btn btn-primary" @onclick="HandleAddStudent" disabled="@(string.IsNullOrEmpty(selectedStudentId))">
+                Добавить
+            </button>
+        </div>
+    }
+    else
+    {
+        <p><em>Загрузка списка учеников...</em></p>
+    }
+}
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private GroupDetailDto group;
+    private List<UserDto> allStudents;
+    private string selectedStudentId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGroupDetails();
+
+        // Загружаем список всех студентов для выпадающего списка
+        allStudents = await UserService.GetUsersByRoleAsync("Student");
+    }
+
+    private async Task LoadGroupDetails()
+    {
+        group = await GroupService.GetGroupDetailsAsync(Id);
+    }
+
+    private async Task HandleAddStudent()
+    {
+        if (string.IsNullOrEmpty(selectedStudentId)) return;
+
+        await GroupService.AddStudentToGroupAsync(Id, selectedStudentId);
+
+        // Сбрасываем выбор и перезагружаем детали группы, чтобы увидеть нового ученика
+        selectedStudentId = string.Empty;
+        await LoadGroupDetails();
+        StateHasChanged();
+    }
+
+    private async Task HandleRemoveStudent(string studentId)
+    {
+        // Здесь тоже можно добавить подтверждение
+        await GroupService.RemoveStudentFromGroupAsync(Id, studentId);
+        await LoadGroupDetails(); // Перезагружаем детали, чтобы обновить список
+        StateHasChanged();
+    }
+}

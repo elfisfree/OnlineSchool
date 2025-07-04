@@ -30,7 +30,9 @@ else
             @foreach (var group in groups)
             {
                 <tr>
-                    <td>@group.Name</td>
+                    <td>
+                        <a href="@($"/admin/group/{group.Id}")">@group.Name</a>
+                    </td>
                     <td>@group.ProgramName</td>
                     <td>@group.TeacherName</td>
                     <td>@group.StudentsCount</td>

@@ -27,5 +27,22 @@ namespace OnlineSchool.WebApp.Services
         {
             await _httpClient.PostAsJsonAsync("api/groups", group);
         }
+
+
+        public async Task<GroupDetailDto> GetGroupDetailsAsync(int id)
+        {
+            return await _httpClient.GetFromJsonAsync<GroupDetailDto>($"api/groups/{id}");
+        }
+
+        public async Task AddStudentToGroupAsync(int groupId, string studentId)
+        {
+            var dto = new AddStudentDto { StudentId = studentId };
+            await _httpClient.PostAsJsonAsync($"api/groups/{groupId}/add-student", dto);
+        }
+
+        public async Task RemoveStudentFromGroupAsync(int groupId, string studentId)
+        {
+            await _httpClient.DeleteAsync($"api/groups/{groupId}/remove-student/{studentId}");
+        }
     }
 }
