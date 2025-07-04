@@ -1,0 +1,75 @@
+﻿@page "/my-dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@attribute [Authorize(Roles = "Student")]
+@inject IStudentService StudentService
+@inject IJSRuntime JSRuntime
+
+<h3>Моё обучение</h3>
+
+@if (schedule == null)
+{
+    <p><em>Загрузка вашего расписания...</em></p>
+}
+else
+{
+    <h4>Ваше расписание</h4>
+    <ul class="list-group">
+        @foreach (var lesson in schedule)
+        {
+            // Выделяем прошедшие уроки
+            var lessonClass = lesson.ScheduledDateTime < DateTime.Now ? "list-group-item-light" : "";
+            
+            <li class="list-group-item @lessonClass" style="cursor: pointer;" @onclick="() => ShowLessonDetails(lesson.Id)">
+                <strong>@lesson.ScheduledDateTime.ToString("dd.MM.yyyy HH:mm")</strong> - @lesson.LessonTitle
+                @if (lesson.IsCompleted)
+                {
+                    <span class="badge bg-success float-end">Посещено</span>
+                }
+            </li>
+        }
+    </ul>
+}
+
+@* Модальное окно для деталей урока (можно переиспользовать то, что мы создали) *@
+<LessonDetailModal Lesson="selectedLesson" />
+
+@code {
+    private List<ScheduledLessonDto> schedule;
+    private LessonDto selectedLesson;
+
+    protected override async Task OnInitializedAsync()
+    {
+        schedule = await StudentService.GetMyScheduleAsync();
+    }
+
+    private async Task ShowLessonDetails(int lessonId)
+    {
+        // selectedLesson = await StudentService.GetLessonDetailsAsync(lessonId);
+        // await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
+
+        try
+        {
+            // Пытаемся загрузить детали урока
+            selectedLesson = await StudentService.GetLessonDetailsAsync(lessonId);
+
+            // Если все успешно, показываем модальное окно
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
+        }
+        catch (HttpRequestException ex)
+        {
+            // Ловим ошибку, если API вернуло неуспешный статус (403, 404, 500 и т.д.)
+            Console.WriteLine($"Ошибка при загрузке деталей урока: {ex.StatusCode}");
+
+            // Здесь можно показать пользователю красивое сообщение об ошибке
+            // Например, с помощью JS alert или специального компонента
+            await JSRuntime.InvokeVoidAsync("alert", "Не удалось загрузить детали урока. Возможно, у вас нет доступа.");
+        }
+        catch (Exception ex)
+        {
+            // Ловим любые другие непредвиденные ошибки
+            Console.WriteLine($"Непредвиденная ошибка: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Произошла непредвиденная ошибка.");
+        }
+    }
+}

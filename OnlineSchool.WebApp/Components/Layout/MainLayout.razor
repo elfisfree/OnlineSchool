@@ -9,6 +9,7 @@
 @inject IUserService UserService
 @inject TokenStorageService TokenStorage
 @inject IGroupService GroupService
+@inject IStudentService StudentService
 
 <div class="page">
     <div class="sidebar">
@@ -43,6 +44,7 @@
             {
                 TokenStorage.SetToken(token);
 
+                StudentService.SetAuthToken(token);
                 AuthService.SetAuthToken(token);
                 ProgramService.SetAuthToken(token);
                 UserService.SetAuthToken(token);

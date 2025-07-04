@@ -15,17 +15,6 @@
             </NavLink>
         </div>
 
-        @* Этот блок будет виден всем пользователям *@
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="weather">
-                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Погода (Тест)
-                    </NavLink>
-                </div>
-            </Authorized>
-        </AuthorizeView>
-
         @* Этот блок виден только Администраторам *@
         <AuthorizeView Roles="Admin">
             <Authorized>
@@ -42,6 +31,14 @@
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/teacher/dashboard">
                     <span class="bi bi-journal-bookmark-fill-nav-menu" aria-hidden="true"></span> Мои группы
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Student">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/my-dashboard">
+                    <span class="bi bi-book-half-nav-menu" aria-hidden="true"></span> Моё обучение
                 </NavLink>
             </div>
         </AuthorizeView>
