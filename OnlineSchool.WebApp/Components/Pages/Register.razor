@@ -1,0 +1,65 @@
+﻿@page "/register"
+@attribute [AllowAnonymous]
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@inject IAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<h3>Регистрация нового пользователя</h3>
+
+<div class="card">
+    <div class="card-body">
+        <EditForm Model="@registerModel" OnValidSubmit="HandleRegistration">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-group mb-3">
+                <label for="firstName">Имя</label>
+                <InputText id="firstName" class="form-control" @bind-Value="registerModel.FirstName" />
+                <ValidationMessage For="@(() => registerModel.FirstName)" />
+            </div>
+            <div class="form-group mb-3">
+                <label for="lastName">Фамилия</label>
+                <InputText id="lastName" class="form-control" @bind-Value="registerModel.LastName" />
+                <ValidationMessage For="@(() => registerModel.LastName)" />
+            </div>
+            <div class="form-group mb-3">
+                <label for="email">Email</label>
+                <InputText id="email" type="email" class="form-control" @bind-Value="registerModel.Email" />
+                <ValidationMessage For="@(() => registerModel.Email)" />
+            </div>
+            <div class="form-group mb-3">
+                <label for="password">Пароль</label>
+                <InputText id="password" type="password" class="form-control" @bind-Value="registerModel.Password" />
+                <ValidationMessage For="@(() => registerModel.Password)" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+
+            <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private RegisterDto registerModel = new RegisterDto();
+    private string errorMessage;
+
+    private async Task HandleRegistration()
+    {
+        errorMessage = null;
+        var result = await AuthService.Register(registerModel);
+        if (result.Successful)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = result.Error ?? "Произошла ошибка при регистрации.";
+        }
+    }
+}

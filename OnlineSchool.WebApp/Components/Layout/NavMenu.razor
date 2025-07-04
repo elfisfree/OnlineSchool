@@ -1,0 +1,53 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Online IT School</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Главная
+            </NavLink>
+        </div>
+
+        @* Этот блок будет виден всем пользователям *@
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="weather">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Погода (Тест)
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+        @* Этот блок виден только Администраторам *@
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/admin/dashboard">
+                        <span class="bi bi-person-fill-gear-nav-menu" aria-hidden="true"></span> Панель Админа
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        
+        @* Этот блок виден только Преподавателям *@
+        <AuthorizeView Roles="Teacher">
+             <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/teacher/dashboard">
+                        <span class="bi bi-easel-nav-menu" aria-hidden="true"></span> Панель Преподавателя
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+
+    </nav>
+</div>
+

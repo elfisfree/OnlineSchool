@@ -1,0 +1,24 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using OnlineSchool.WebApp.Services
+@using System.Security.Claims
+@inject NavigationManager NavigationManager
+@inject IAuthService AuthService
+
+<AuthorizeView>
+    <Authorized>
+        <a href="account">Привет, @context.User.FindFirst(ClaimTypes.Email)?.Value!</a>
+        <button class="nav-link btn btn-link" @onclick="BeginLogout">Выйти</button>
+    </Authorized>
+    <NotAuthorized>
+        <a href="register">Регистрация</a>
+        <a href="login">Вход</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+    private async Task BeginLogout()
+    {
+        await AuthService.Logout();
+        NavigationManager.NavigateTo("/");
+    }
+}

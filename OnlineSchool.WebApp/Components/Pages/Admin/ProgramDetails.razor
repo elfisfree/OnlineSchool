@@ -1,0 +1,90 @@
+﻿@page "/admin/program/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IProgramService ProgramService
+
+@if (program == null)
+{
+    <p><em>Загрузка программы...</em></p>
+}
+else
+{
+    <h3>@program.Name</h3>
+    <p>@program.Description</p>
+    <hr />
+
+    <h4>Курсы (темы) программы</h4>
+
+    @if (courses != null)
+    {
+        foreach (var course in courses)
+        {
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>@course.Name</h5>
+
+                    @* --- ДОБАВЛЯЕМ КНОПКУ УДАЛЕНИЯ --- *@
+                    <button class="btn btn-outline-danger btn-sm" @onclick="() => HandleDeleteCourse(course.Id)">
+                        Удалить курс
+                    </button>
+                </div>
+                <div class="card-body">
+                    <LessonsList CourseId="@course.Id" />
+                </div>
+            </div>
+        }
+    }
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Добавить новый курс</h5>
+            <EditForm Model="newCourse" OnValidSubmit="() => HandleAddCourse(Id)">
+                <DataAnnotationsValidator />
+                <div class="input-group">
+                    <InputText @bind-Value="newCourse.Name" class="form-control" placeholder="Название нового курса" />
+                    <button type="submit" class="btn btn-primary">Добавить курс</button>
+                </div>
+                <ValidationMessage For="@(() => newCourse.Name)" />
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ProgramDto program;
+    private List<CourseDto> courses;
+    private CourseDto newCourse = new CourseDto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        program = await ProgramService.GetProgramByIdAsync(Id);
+        if (program != null)
+        {
+            await LoadCourses();
+        }
+    }
+
+    private async Task LoadCourses()
+    {
+        courses = await ProgramService.GetCoursesAsync(Id);
+    }
+
+    private async Task HandleAddCourse(int programId)
+    {
+        await ProgramService.CreateCourseAsync(programId, newCourse);
+        newCourse = new CourseDto(); // Очищаем форму
+        await LoadCourses(); // Перезагружаем список курсов
+    }
+
+    private async Task HandleDeleteCourse(int courseId)
+    {
+        // Здесь хорошо бы добавить модальное окно с подтверждением, но для простоты пока без него
+        await ProgramService.DeleteCourseAsync(Id, courseId); // Id - это programId из параметра страницы
+        await LoadCourses(); // Перезагружаем список курсов
+    }
+}

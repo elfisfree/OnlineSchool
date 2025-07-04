@@ -1,0 +1,17 @@
+﻿@page "/admin/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<h3>Панель Администратора</h3>
+<p>Добро пожаловать, администратор!</p>
+
+<p>Здесь будут инструменты для управления системой.</p>
+
+<div class="list-group">
+    <a href="/admin/programs" class="list-group-item list-group-item-action">
+        Управление образовательными программами
+    </a>
+    <a href="/admin/groups" class="list-group-item list-group-item-action">
+        Управление группами
+    </a>
+</div>

@@ -1,0 +1,78 @@
+﻿@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@inject IProgramService ProgramService
+
+<h5>Уроки</h5>
+
+@if (lessons != null && lessons.Any())
+{
+    <ul class="list-group">
+        @foreach (var lesson in lessons)
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span>@lesson.Order. @lesson.Title</span>
+
+                @* --- ДОБАВЛЯЕМ КНОПКУ УДАЛЕНИЯ --- *@
+                <button class="btn btn-danger btn-sm" @onclick="() => HandleDeleteLesson(lesson.Id)">
+                    ×
+                </button>
+            </li>
+        }
+    </ul>
+}
+else
+{
+    <p>В этом курсе пока нет уроков.</p>
+}
+
+<hr />
+<h6>Добавить новый урок</h6>
+<EditForm Model="newLesson" OnValidSubmit="HandleAddLesson">
+    <DataAnnotationsValidator />
+    <div class="mb-2">
+        <InputText @bind-Value="newLesson.Title" class="form-control" placeholder="Название урока" />
+    </div>
+    <div class="mb-2">
+        <InputTextArea @bind-Value="newLesson.Description" class="form-control" placeholder="Описание" />
+    </div>
+    <div class="mb-2">
+        <InputText @bind-Value="newLesson.ContentText" class="form-control" placeholder="Текст урока" />
+    </div>
+    <div class="mb-2">
+        <InputText @bind-Value="newLesson.VideoUrl" class="form-control" placeholder="Ссылка на видео" />
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm">Добавить урок</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public int CourseId { get; set; }
+
+    private List<LessonDto> lessons;
+    private LessonDto newLesson = new LessonDto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLessons();
+    }
+
+    private async Task LoadLessons()
+    {
+        lessons = await ProgramService.GetLessonsAsync(CourseId);
+        // Определяем следующий порядковый номер для нового урока
+        newLesson.Order = (lessons?.Count ?? 0) + 1;
+    }
+
+    private async Task HandleAddLesson()
+    {
+        await ProgramService.CreateLessonAsync(CourseId, newLesson);
+        newLesson = new LessonDto(); // Очищаем форму
+        await LoadLessons(); // Перезагружаем список
+    }
+
+    private async Task HandleDeleteLesson(int lessonId)
+    {
+        await ProgramService.DeleteLessonAsync(CourseId, lessonId);
+        await LoadLessons(); // Перезагружаем список уроков
+    }
+}

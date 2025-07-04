@@ -1,0 +1,65 @@
+﻿@page "/admin/program/create"
+@page "/admin/program/edit/{Id:int}"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Admin")]
+@inject IProgramService ProgramService
+@inject NavigationManager NavigationManager
+
+<h3>@Title</h3>
+
+<EditForm Model="@program" OnValidSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Название программы</label>
+        <InputText class="form-control" @bind-Value="program.Name" />
+        <ValidationMessage For="@(() => program.Name)" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Описание</label>
+        <InputTextArea class="form-control" @bind-Value="program.Description" />
+        <ValidationMessage For="@(() => program.Description)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancel">Отмена</button>
+</EditForm>
+
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private ProgramDto program = new ProgramDto();
+    private string Title = "Создание новой программы";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id != 0) // Это режим редактирования
+        {
+            Title = "Редактирование программы";
+            program = await ProgramService.GetProgramByIdAsync(Id);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (Id == 0) // Создание
+        {
+            await ProgramService.CreateProgramAsync(program);
+        }
+        else // Редактирование
+        {
+            await ProgramService.UpdateProgramAsync(program);
+        }
+        NavigationManager.NavigateTo("/admin/programs");
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/admin/programs");
+    }
+}
