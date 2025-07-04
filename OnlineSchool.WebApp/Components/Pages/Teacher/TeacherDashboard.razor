@@ -1,0 +1,49 @@
+﻿@page "/teacher/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Teacher")]
+@inject ITeacherService TeacherService
+
+<h3>Мои учебные группы</h3>
+
+@if (groups == null)
+{
+    <p><em>Загрузка...</em></p>
+}
+else if (!groups.Any())
+{
+    <p>За вами пока не закреплено ни одной группы.</p>
+}
+else
+{
+    <div class="list-group">
+        @foreach (var group in groups)
+        {
+            <a href="@($"/teacher/group/{group.Id}")" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">@group.Name</h5>
+                    <small>@group.StudentsCount студент(ов)</small>
+                </div>
+                <p class="mb-1">Программа: @group.ProgramName</p>
+            </a>
+        }
+    </div>
+}
+
+@code {
+    private List<TeacherGroupDto> groups;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            groups = await TeacherService.GetMyGroupsAsync();
+        }
+        catch (Exception ex)
+        {
+            // Здесь можно обработать ошибку, если нужно
+            Console.WriteLine($"Ошибка при загрузке групп: {ex.Message}");
+        }
+    }
+}

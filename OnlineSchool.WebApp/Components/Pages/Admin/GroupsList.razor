@@ -1,52 +1,82 @@
 ﻿@page "/admin/groups"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 @using OnlineSchool.Shared.DTOs
 @using OnlineSchool.WebApp.Services
 @attribute [Authorize(Roles = "Admin")]
 @inject IGroupService GroupService
 
-<h3>Учебные группы</h3>
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <Authorized>
+            <h3>Учебные группы</h3>
+            <p>
+                <a href="/admin/group/create" class="btn btn-success">Создать новую группу</a>
+            </p>
 
-<p>
-    <a href="/admin/group/create" class="btn btn-success">Создать новую группу</a>
-</p>
-
-@if (groups == null)
-{
-    <p><em>Загрузка...</em></p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Программа</th>
-                <th>Преподаватель</th>
-                <th>Кол-во учеников</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var group in groups)
+            @if (isLoading)
             {
-                <tr>
-                    <td>
-                        <a href="@($"/admin/group/{group.Id}")">@group.Name</a>
-                    </td>
-                    <td>@group.ProgramName</td>
-                    <td>@group.TeacherName</td>
-                    <td>@group.StudentsCount</td>
-                </tr>
+                <p><em>Загрузка...</em></p>
             }
-        </tbody>
-    </table>
-}
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Название</th>
+                            <th>Программа</th>
+                            <th>Преподаватель</th>
+                            <th>Кол-во учеников</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in groups)
+                        {
+                            <tr>
+                                <td><a href="@($"/admin/group/{group.Id}")">@group.Name</a></td>
+                                <td>@group.ProgramName</td>
+                                <td>@group.TeacherName</td>
+                                <td>@group.StudentsCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <p>Доступ запрещен.</p>
+        </NotAuthorized>
+        <Authorizing>
+            <p><em>Проверка авторизации...</em></p>
+        </Authorizing>
+    </AuthorizeView>
+</CascadingAuthenticationState>
 
 @code {
     private List<GroupDto> groups;
+    private bool isLoading = true;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        groups = await GroupService.GetGroupsAsync();
+        isLoading = true;
+        var authState = await AuthenticationStateTask;
+
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            // ЗАПРАШИВАЕМ ДАННЫЕ ТОЛЬКО ПОСЛЕ ПОДТВЕРЖДЕНИЯ АУТЕНТИФИКАЦИИ
+            try
+            {
+                groups = await GroupService.GetGroupsAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка при загрузке групп: {ex.Message}");
+                // Здесь можно добавить вывод ошибки пользователю
+            }
+        }
+        isLoading = false;
     }
 }

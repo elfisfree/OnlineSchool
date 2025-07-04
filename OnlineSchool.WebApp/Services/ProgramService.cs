@@ -10,6 +10,15 @@ namespace OnlineSchool.WebApp.Services
     {
         private readonly HttpClient _httpClient;
 
+        
+
+        public ProgramService(IHttpClientFactory clientFactory, TokenStorageService tokenStorage)
+        {
+            _httpClient = clientFactory.CreateClient("OnlineSchool.API");
+
+            SetAuthToken(tokenStorage.Token);
+        }
+
         public void SetAuthToken(string token) // <-- РЕАЛИЗУЙТЕ МЕТОД
         {
             if (string.IsNullOrEmpty(token))
@@ -23,12 +32,6 @@ namespace OnlineSchool.WebApp.Services
             }
         }
 
-        public ProgramService(IHttpClientFactory clientFactory, IAuthService authService)
-        {
-            _httpClient = clientFactory.CreateClient("OnlineSchool.API");
-
-            authService.OnTokenChanged += SetAuthToken;
-        }
 
         public async Task<List<ProgramDto>> GetProgramsAsync()
         {

@@ -13,6 +13,8 @@ namespace OnlineSchool.WebApp.Services
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorage;
         private readonly ClaimsPrincipal _anonymous = new ClaimsPrincipal(new ClaimsIdentity());
+        private ClaimsPrincipal _currentUser = new ClaimsPrincipal(new ClaimsIdentity());
+
 
         public ApiAuthenticationStateProvider(HttpClient httpClient, ILocalStorageService localStorage)
         {
@@ -20,27 +22,29 @@ namespace OnlineSchool.WebApp.Services
             _localStorage = localStorage;
         }
 
-        public override async Task<AuthenticationState> GetAuthenticationStateAsync()
+        public override Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            return new AuthenticationState(_anonymous);
+            // Просто возвращаем текущего пользователя. Никаких JS вызовов!
+            return Task.FromResult(new AuthenticationState(_currentUser));
         }
 
-        public async Task UpdateAuthenticationState(string token)
+        public void SetAuthenticationState(string token)
         {
             ClaimsPrincipal claimsPrincipal;
 
-            if (!string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
-                claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
+                claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
             }
             else
             {
-                _httpClient.DefaultRequestHeaders.Authorization = null;
-                claimsPrincipal = _anonymous;
+                claimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
             }
 
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(claimsPrincipal)));
+            _currentUser = claimsPrincipal;
+
+            // Уведомляем Blazor, что состояние аутентификации изменилось
+            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)

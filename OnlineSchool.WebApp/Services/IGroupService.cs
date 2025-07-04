@@ -12,5 +12,8 @@ namespace OnlineSchool.WebApp.Services
         Task AddStudentToGroupAsync(int groupId, string studentId);
 
         Task RemoveStudentFromGroupAsync(int groupId, string studentId);
+
+        Task<List<ScheduledLessonDto>> GetScheduleAsync(int groupId);
+        Task GenerateScheduleAsync(int groupId, ScheduleGenerationDto dto);
     }
 }

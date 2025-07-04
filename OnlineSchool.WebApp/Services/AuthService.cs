@@ -10,18 +10,23 @@ namespace OnlineSchool.WebApp.Services
 {
     public class AuthService : IAuthService
     {
-        public event Action<string> OnTokenChanged;
         private readonly HttpClient _httpClient;
         private readonly AuthenticationStateProvider _authenticationStateProvider;
         private readonly ILocalStorageService _localStorage;
 
+        private readonly TokenStorageService _tokenStorage;
+
+        public event Action<string> OnTokenChanged;
+
         public AuthService(IHttpClientFactory clientFactory,
                            AuthenticationStateProvider authenticationStateProvider,
-                           ILocalStorageService localStorage)
+                           ILocalStorageService localStorage,
+                           TokenStorageService tokenStorage)
         {
             _httpClient = clientFactory.CreateClient("OnlineSchool.API");
             _authenticationStateProvider = authenticationStateProvider;
             _localStorage = localStorage;
+            _tokenStorage = tokenStorage;
         }
 
         public void SetAuthToken(string token) 
@@ -50,11 +55,9 @@ namespace OnlineSchool.WebApp.Services
 
             await _localStorage.SetItemAsync("authToken", loginResult.Token);
 
-            SetAuthToken(loginResult.Token);
+            _tokenStorage.SetToken(loginResult.Token);
 
-            await ((ApiAuthenticationStateProvider)_authenticationStateProvider).UpdateAuthenticationState(loginResult.Token);
-
-            OnTokenChanged?.Invoke(loginResult.Token);
+            ((ApiAuthenticationStateProvider)_authenticationStateProvider).SetAuthenticationState(loginResult.Token);
 
             return new AuthResult { Successful = true };
         }
@@ -63,11 +66,10 @@ namespace OnlineSchool.WebApp.Services
         {
             await _localStorage.RemoveItemAsync("authToken");
             // Вызываем обновление состояния с пустым токеном
-            SetAuthToken(null);
 
-            await ((ApiAuthenticationStateProvider)_authenticationStateProvider).UpdateAuthenticationState(null);
-            
-            OnTokenChanged?.Invoke(null);
+            _tokenStorage.SetToken(null);
+
+            ((ApiAuthenticationStateProvider)_authenticationStateProvider).SetAuthenticationState(null);
         }
 
 

@@ -5,6 +5,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject IGroupService GroupService
 @inject IUserService UserService
+@inject NavigationManager NavigationManager
 
 <h3>Детали группы</h3>
 
@@ -68,6 +69,52 @@ else
     {
         <p><em>Загрузка списка учеников...</em></p>
     }
+
+    <h4>Расписание занятий</h4>
+
+    @if (schedule != null && schedule.Any())
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Дата и время</th>
+                    <th>Урок</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var scheduledLesson in schedule)
+                {
+                    <tr>
+                        <td>@scheduledLesson.ScheduledDateTime.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td>@scheduledLesson.LessonTitle</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p>Расписание для этой группы еще не создано.</p>
+    }
+
+    <div class="card bg-light mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Сгенерировать расписание</h5>
+            <EditForm Model="scheduleDto" OnValidSubmit="HandleGenerateSchedule">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Дата начала</label>
+                        <InputDate @bind-Value="startDateForPicker" class="form-control" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Время начала</label>
+                        <InputDate Type="InputDateType.Time" @bind-Value="scheduleTime" class="form-control" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-warning">Сгенерировать (перезапишет существующее)</button>
+            </EditForm>
+        </div>
+    </div>
 }
 
 
@@ -78,13 +125,38 @@ else
     private GroupDetailDto group;
     private List<UserDto> allStudents;
     private string selectedStudentId;
+    private List<ScheduledLessonDto> schedule;
+    private ScheduleGenerationDto scheduleDto = new ScheduleGenerationDto();
+    private DateTime startDateForPicker = DateTime.Today.AddDays(1);
+    // private DateTime scheduleDate = DateTime.Today.AddDays(1);
+    private DateTime scheduleTime = new DateTime(1, 1, 1, 19, 0, 0);
 
     protected override async Task OnInitializedAsync()
     {
         await LoadGroupDetails();
-
+        await LoadSchedule();
         // Загружаем список всех студентов для выпадающего списка
         allStudents = await UserService.GetUsersByRoleAsync("Student");
+    }
+
+    private async Task LoadSchedule()
+    {
+        schedule = await GroupService.GetScheduleAsync(Id);
+    }
+
+    private async Task HandleGenerateSchedule()
+    {
+        var dtoToSend = new ScheduleGenerationDto
+        {
+            StartDate = startDateForPicker.Date,
+            StartTime = scheduleTime.TimeOfDay,
+            // Дни недели остаются по умолчанию
+        };
+
+        await GroupService.GenerateScheduleAsync(Id, dtoToSend);
+        // await LoadSchedule();
+        // StateHasChanged();
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     private async Task LoadGroupDetails()
@@ -101,7 +173,7 @@ else
         // Сбрасываем выбор и перезагружаем детали группы, чтобы увидеть нового ученика
         selectedStudentId = string.Empty;
         await LoadGroupDetails();
-        StateHasChanged();
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     private async Task HandleRemoveStudent(string studentId)
@@ -109,6 +181,6 @@ else
         // Здесь тоже можно добавить подтверждение
         await GroupService.RemoveStudentFromGroupAsync(Id, studentId);
         await LoadGroupDetails(); // Перезагружаем детали, чтобы обновить список
-        StateHasChanged();
+        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }

@@ -1,0 +1,126 @@
+﻿@page "/teacher/group/{GroupId:int}"
+@using Microsoft.AspNetCore.Authorization
+@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Components.Layout
+@using OnlineSchool.WebApp.Services
+@attribute [Authorize(Roles = "Teacher")]
+@inject ITeacherService TeacherService
+@inject IJSRuntime JSRuntime
+
+@if (group == null || schedule == null)
+{
+    <p><em>Загрузка данных о группе...</em></p>
+}
+else
+{
+    <h3>Группа: @group.Name</h3>
+    <p><strong>Программа:</strong> @group.ProgramName</p>
+    <hr />
+
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Расписание занятий</h4>
+            @if (schedule.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var lesson in schedule)
+                    {
+                        <li class="list-group-item @(lesson.IsCompleted ? "list-group-item-success" : "")"
+                            style="cursor: pointer;"
+                            @onclick="() => ShowLessonDetails(lesson.Id)">
+
+                            <strong>@lesson.ScheduledDateTime.ToString("dd.MM.yyyy HH:mm")</strong> - @lesson.LessonTitle
+                        </li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>Для этой группы еще не создано расписание.</p>
+            }
+        </div>
+        <div class="col-md-6">
+            @* --- НАЧАЛО ИСПРАВЛЕННОГО БЛОКА --- *@
+            <h4>Список студентов (@group.Students.Count)</h4>
+            @if (group.Students.Any())
+            {
+                <ul class="list-group">
+                    @foreach (var student in group.Students)
+                    {
+                        <li class="list-group-item">@student.FullName</li>
+                    }
+                </ul>
+            }
+            else
+            {
+                <p>В группе нет студентов.</p>
+            }
+            @* --- КОНЕЦ ИСПРАВЛЕННОГО БЛОКА --- *@
+        </div>
+    </div>
+}
+
+@* Модальное окно для деталей урока *@
+<LessonDetailModal Lesson="selectedLesson" />
+
+<AttendanceModal Students="group?.Students" 
+                 ScheduledLessonId="selectedLessonId" 
+                 LessonTitle="selectedLessonTitle"
+                 OnAttendanceUpdated="HandleAttendanceUpdated" />
+
+@code {
+    [Parameter]
+    public int GroupId { get; set; }
+
+    private GroupDetailDto group;
+    private List<ScheduledLessonDto> schedule;
+    private LessonDto selectedLesson;
+    private string selectedLessonTitle;
+    private int selectedLessonId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var groupTask = TeacherService.GetGroupDetailsAsync(GroupId);
+            var scheduleTask = TeacherService.GetGroupScheduleAsync(GroupId);
+
+            await Task.WhenAll(groupTask, scheduleTask);
+
+            group = groupTask.Result;
+            schedule = scheduleTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка доступа или загрузки: {ex.Message}");
+        }
+    }
+
+    private async Task ShowLessonDetails(int lessonId)
+    {
+        try
+        {
+            selectedLesson = await TeacherService.GetLessonDetailsAsync(lessonId);
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Ошибка при загрузке деталей урока: {ex.Message}");
+        }
+    }
+
+    private async Task OpenAttendanceModal(int lessonId, string lessonTitle)
+    {
+        selectedLessonId = lessonId;
+        selectedLessonTitle = lessonTitle;
+        // Вызываем JS для открытия модального окна
+        await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('attendanceModal')).show()");
+    }
+
+    private async Task HandleAttendanceUpdated()
+    {
+        // Перезагружаем расписание, чтобы увидеть изменения (урок станет зеленым)
+        schedule = await TeacherService.GetGroupScheduleAsync(GroupId);
+        StateHasChanged();
+    }
+}

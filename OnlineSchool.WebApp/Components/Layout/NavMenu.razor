@@ -39,15 +39,12 @@
         
         @* Этот блок виден только Преподавателям *@
         <AuthorizeView Roles="Teacher">
-             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="/teacher/dashboard">
-                        <span class="bi bi-easel-nav-menu" aria-hidden="true"></span> Панель Преподавателя
-                    </NavLink>
-                </div>
-            </Authorized>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/teacher/dashboard">
+                    <span class="bi bi-journal-bookmark-fill-nav-menu" aria-hidden="true"></span> Мои группы
+                </NavLink>
+            </div>
         </AuthorizeView>
-
     </nav>
 </div>
 

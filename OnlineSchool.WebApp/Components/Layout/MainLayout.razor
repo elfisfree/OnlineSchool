@@ -7,6 +7,7 @@
 @inject IAuthService AuthService
 @inject IProgramService ProgramService
 @inject IUserService UserService
+@inject TokenStorageService TokenStorage
 @inject IGroupService GroupService
 
 <div class="page">
@@ -40,13 +41,15 @@
             var token = await LocalStorage.GetItemAsync<string>("authToken");
             if (!string.IsNullOrEmpty(token))
             {
+                TokenStorage.SetToken(token);
+
                 AuthService.SetAuthToken(token);
                 ProgramService.SetAuthToken(token);
                 UserService.SetAuthToken(token);
                 GroupService.SetAuthToken(token);
                 // (когда появятся другие сервисы, их тоже нужно будет сюда добавить)
 
-                await ((ApiAuthenticationStateProvider)AuthenticationStateProvider).UpdateAuthenticationState(token);
+                ((ApiAuthenticationStateProvider)AuthenticationStateProvider).SetAuthenticationState(token);
             }
         }
     }

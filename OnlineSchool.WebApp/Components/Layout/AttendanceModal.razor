@@ -1,0 +1,77 @@
+﻿@using OnlineSchool.Shared.DTOs
+@using OnlineSchool.WebApp.Services
+@inject ITeacherService TeacherService
+
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отметить посещаемость</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (Students == null)
+                {
+                    <p><em>Загрузка списка студентов...</em></p>
+                }
+                else
+                {
+                    <h6>Урок: @LessonTitle</h6>
+                    <p>Отметьте присутствующих студентов:</p>
+                    <form>
+                        @foreach (var student in Students)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="@($"student_{student.Id}")"
+                                       @onchange="(e) => ToggleStudentPresence(student.Id, (bool)e.Value)" />
+                                <label class="form-check-label" for="@($"student_{student.Id}")">
+                                    @student.FullName
+                                </label>
+                            </div>
+                        }
+                        <hr />
+                        <div class="mb-3">
+                            <label for="teacherComment" class="form-label">Комментарий к уроку (необязательно)</label>
+                            <textarea id="teacherComment" class="form-control" @bind="attendanceDto.TeacherComment" rows="3"></textarea>
+                        </div>
+                    </form>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" @onclick="HandleSaveAttendance" data-bs-dismiss="modal">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<UserDto> Students { get; set; }
+    [Parameter] public int ScheduledLessonId { get; set; }
+    [Parameter] public string LessonTitle { get; set; }
+    [Parameter] public EventCallback OnAttendanceUpdated { get; set; } // Событие для обновления родителя
+
+    private AttendanceUpdateDto attendanceDto = new AttendanceUpdateDto();
+
+    private void ToggleStudentPresence(string studentId, bool isPresent)
+    {
+        if (isPresent)
+        {
+            if (!attendanceDto.PresentStudentIds.Contains(studentId))
+            {
+                attendanceDto.PresentStudentIds.Add(studentId);
+            }
+        }
+        else
+        {
+            attendanceDto.PresentStudentIds.Remove(studentId);
+        }
+    }
+
+    private async Task HandleSaveAttendance()
+    {
+        await TeacherService.UpdateAttendanceAsync(ScheduledLessonId, attendanceDto);
+        attendanceDto = new AttendanceUpdateDto(); // Сбрасываем модель
+        await OnAttendanceUpdated.InvokeAsync(); // Сообщаем родителю, что нужно обновиться
+    }
+}

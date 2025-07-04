@@ -19,19 +19,20 @@ public class GroupsController : ControllerBase
 
     // GET: api/groups
     [HttpGet]
+    [HttpGet]
     public async Task<ActionResult<IEnumerable<GroupDto>>> GetGroups()
     {
         var groups = await _context.Groups
-            .Include(g => g.EducationalProgram)
-            .Include(g => g.Teacher)
-            .Include(g => g.Students)
+            // .Include() больше не нужны, так как мы выбираем данные напрямую
             .Select(g => new GroupDto
             {
                 Id = g.Id,
                 Name = g.Name,
-                ProgramName = g.EducationalProgram.Name,
-                TeacherName = g.Teacher.FirstName + " " + g.Teacher.LastName,
-                StudentsCount = g.Students.Count
+                // Безопасный доступ: если программы нет, вернется null (или пустая строка)
+                ProgramName = g.EducationalProgram != null ? g.EducationalProgram.Name : "N/A",
+                // Безопасный доступ: если преподавателя нет, вернется null (или пустая строка)
+                TeacherName = g.Teacher != null ? (g.Teacher.FirstName + " " + g.Teacher.LastName) : "N/A",
+                StudentsCount = g.Students.Count()
             })
             .ToListAsync();
 

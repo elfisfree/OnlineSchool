@@ -1,5 +1,3 @@
-// --- НАЧАЛО ФАЙЛА OnlineSchool.API/Program.cs ---
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -10,84 +8,49 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. РЕГИСТРАЦИЯ СЕРВИСОВ
+// --- РЕГИСТРАЦИЯ СЕРВИСОВ ---
 
-// Подключение к базе данных
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// 1. Контекст БД
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Настройка ASP.NET Core Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
-{
-    // Настройки пароля (опционально, но рекомендуется)
-    options.Password.RequireDigit = false;
-    options.Password.RequiredLength = 4;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
-    options.Password.RequireLowercase = false;
-})
+// 2. Identity
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-// Настройка Аутентификации с использованием JWT
-// ЭТО САМЫЙ ВАЖНЫЙ БЛОК ДЛЯ ИСПРАВЛЕНИЯ ОШИБКИ
+// 3. АУТЕНТИФИКАЦИЯ (ЭТОТ БЛОК РЕШАЕТ ОШИБКУ)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
+.AddJwtBearer(options => // Эта строка добавляет обработчик для JWT
 {
-    options.SaveToken = true;
-    options.RequireHttpsMetadata = false; // Для разработки ставим false
-    options.TokenValidationParameters = new TokenValidationParameters()
+    // ... все наши параметры валидации токена ...
+    options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+        RoleClaimType = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
     };
 });
 
+// 4. Авторизация (дополняет аутентификацию)
+builder.Services.AddAuthorization();
 
+// 5. Контроллеры и Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+// --- СБОРКА ПРИЛОЖЕНИЯ ---
 var app = builder.Build();
 
-// 2. НАСТРОЙКА КОНВЕЙЕРА ОБРАБОТКИ ЗАПРОСОВ (MIDDLEWARE)
-
-// Инициализация ролей при запуске
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-        // Убедимся, что наш сервис для инициализации есть или создадим его здесь же
-        string[] roleNames = { "Admin", "Teacher", "Student" };
-        foreach (var roleName in roleNames)
-        {
-            var roleExist = await roleManager.RoleExistsAsync(roleName);
-            if (!roleExist)
-            {
-                await roleManager.CreateAsync(new IdentityRole(roleName));
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database roles.");
-    }
-}
-
-
+// --- НАСТРОЙКА КОНВЕЙЕРА (MIDDLEWARE) ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -96,15 +59,24 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Важно: UseRouting должен быть до UseAuthentication и UseAuthorization
-app.UseRouting();
-
-// Включаем аутентификацию и авторизацию. ПОРЯДОК КРИТИЧЕН!
+// ПРАВИЛЬНЫЙ ПОРЯДОК: Сначала аутентификация, потом авторизация
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+// Инициализация ролей (опционально, но полезно)
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    string[] roleNames = { "Admin", "Teacher", "Student" };
+    foreach (var roleName in roleNames)
+    {
+        if (!await roleManager.RoleExistsAsync(roleName))
+        {
+            await roleManager.CreateAsync(new IdentityRole(roleName));
+        }
+    }
+}
 
-// --- КОНЕЦ ФАЙЛА ---
+app.Run();
