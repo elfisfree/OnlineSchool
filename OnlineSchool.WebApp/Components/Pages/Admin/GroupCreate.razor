@@ -72,5 +72,6 @@ else
     {
         await GroupService.CreateGroupAsync(newGroup);
         NavigationManager.NavigateTo("/admin/groups");
+        // NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }

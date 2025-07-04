@@ -156,7 +156,7 @@ else
         await GroupService.GenerateScheduleAsync(Id, dtoToSend);
         // await LoadSchedule();
         // StateHasChanged();
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        // NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     private async Task LoadGroupDetails()
@@ -173,7 +173,7 @@ else
         // Сбрасываем выбор и перезагружаем детали группы, чтобы увидеть нового ученика
         selectedStudentId = string.Empty;
         await LoadGroupDetails();
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        // NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 
     private async Task HandleRemoveStudent(string studentId)
@@ -181,6 +181,6 @@ else
         // Здесь тоже можно добавить подтверждение
         await GroupService.RemoveStudentFromGroupAsync(Id, studentId);
         await LoadGroupDetails(); // Перезагружаем детали, чтобы обновить список
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        // NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
     }
 }
