@@ -17,7 +17,6 @@ else
     <ul class="list-group">
         @foreach (var lesson in schedule)
         {
-            // Выделяем прошедшие уроки
             var lessonClass = lesson.ScheduledDateTime < DateTime.Now ? "list-group-item-light" : "";
             
             <li class="list-group-item @lessonClass" style="cursor: pointer;" @onclick="() => ShowLessonDetails(lesson.Id)">
@@ -31,12 +30,11 @@ else
     </ul>
 }
 
-@* Модальное окно для деталей урока (можно переиспользовать то, что мы создали) *@
-<LessonDetailModal Lesson="selectedLesson" />
-
+<LessonDetailModal Lesson="selectedLesson" ErrorMessage="lessonDetailError" />
 @code {
     private List<ScheduledLessonDto> schedule;
     private LessonDto selectedLesson;
+    private string lessonDetailError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,31 +43,24 @@ else
 
     private async Task ShowLessonDetails(int lessonId)
     {
-        // selectedLesson = await StudentService.GetLessonDetailsAsync(lessonId);
-        // await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
+        selectedLesson = null;
+        lessonDetailError = null;
 
         try
         {
-            // Пытаемся загрузить детали урока
             selectedLesson = await StudentService.GetLessonDetailsAsync(lessonId);
 
-            // Если все успешно, показываем модальное окно
             await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
         }
         catch (HttpRequestException ex)
         {
-            // Ловим ошибку, если API вернуло неуспешный статус (403, 404, 500 и т.д.)
-            Console.WriteLine($"Ошибка при загрузке деталей урока: {ex.StatusCode}");
-
-            // Здесь можно показать пользователю красивое сообщение об ошибке
-            // Например, с помощью JS alert или специального компонента
-            await JSRuntime.InvokeVoidAsync("alert", "Не удалось загрузить детали урока. Возможно, у вас нет доступа.");
+            lessonDetailError = $"Не удалось загрузить данные (ошибка: {ex.StatusCode}).";
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Ловим любые другие непредвиденные ошибки
-            Console.WriteLine($"Непредвиденная ошибка: {ex.Message}");
-            await JSRuntime.InvokeVoidAsync("alert", "Произошла непредвиденная ошибка.");
+            lessonDetailError = "Произошла непредвиденная ошибка.";
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('lessonDetailModal')).show()");
         }
     }
 }

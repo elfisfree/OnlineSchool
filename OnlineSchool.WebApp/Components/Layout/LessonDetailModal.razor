@@ -3,14 +3,24 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="lessonDetailModalLabel">@Lesson?.Title</h5>
+                @* Заголовок теперь зависит от того, есть ошибка или нет *@
+                <h5 class="modal-title" id="lessonDetailModalLabel">
+                    @(string.IsNullOrEmpty(ErrorMessage) ? Lesson?.Title : "Ошибка")
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                @if (Lesson == null)
+                @* Если есть сообщение об ошибке, показываем его *@
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger">@ErrorMessage</div>
+                }
+                @* Иначе, если идет загрузка, показываем это *@
+                else if (Lesson == null)
                 {
                     <p><em>Загрузка урока...</em></p>
                 }
+                @* Если все хорошо, показываем детали урока *@
                 else
                 {
                     <h6>Описание</h6>
@@ -34,4 +44,8 @@
 @code {
     [Parameter]
     public LessonDto Lesson { get; set; }
+
+    // Новый параметр для сообщения об ошибке
+    [Parameter]
+    public string ErrorMessage { get; set; }
 }
